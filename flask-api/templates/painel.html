@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>opCoders Judge — Fila de Submissões</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel-border: #1f2531;
+    --text: #e6e9ef;
+    --muted: #7d8598;
+    --accent: #5eead4;
+    --amber: #f5b74e;
+    --red: #f16565;
+    --blue: #6ea8ff;
+    --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    padding: 40px 24px 80px;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .title-block .eyebrow {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  h1 .queue-name {
+    color: var(--accent);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.6);
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(94, 234, 212, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(94, 234, 212, 0); }
+  }
+
+  .stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    min-width: 110px;
+  }
+
+  .stat .n {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .stat .l {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--panel-border);
+    transition: background 0.15s ease;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody tr:hover {
+    background: #171c27;
+  }
+
+  td {
+    padding: 12px 16px;
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  .id-cell {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .badge.pendente { background: rgba(125,133,152,0.15); color: var(--muted); }
+  .badge.pendente::before { background: var(--muted); }
+
+  .badge.em_execucao { background: rgba(245,183,78,0.15); color: var(--amber); }
+  .badge.em_execucao::before { background: var(--amber); }
+
+  .badge.concluido, .badge.aceito { background: rgba(94,234,212,0.15); color: var(--accent); }
+  .badge.concluido::before, .badge.aceito::before { background: var(--accent); }
+
+  .badge.erro_execucao, .badge.falha, .badge.tempo_limite_excedido,
+  .badge.erro_infraestrutura, .badge.limite_memoria_excedido {
+    background: rgba(241,101,101,0.15); color: var(--red);
+  }
+  .badge.erro_execucao::before, .badge.falha::before,
+  .badge.tempo_limite_excedido::before, .badge.erro_infraestrutura::before,
+  .badge.limite_memoria_excedido::before { background: var(--red); }
+
+  .veredito {
+    margin-top: 4px;
+  }
+
+  .saida {
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 280px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 4px;
+  }
+
+  .tempo {
+    color: var(--blue);
+    font-size: 12px;
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 13px;
+  }
+
+  footer {
+    margin-top: 20px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title-block">
+        <div class="eyebrow">opCoders Judge · ambiente de teste</div>
+        <h1>Fila <span class="queue-name">submissoes</span></h1>
+      </div>
+      <div class="status-row">
+        <span class="pulse"></span>
+        <span id="ultima-atualizacao">atualizando...</span>
+      </div>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Aluno / Questão</th>
+          <th>Status</th>
+          <th>Saída</th>
+          <th>Tempo</th>
+          <th>Criado em</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela">
+        <tr><td colspan="6" class="empty">Carregando submissões...</td></tr>
+      </tbody>
+    </table>
+
+    <footer>Atualiza a cada 3s · <a href="/submissoes">ver JSON bruto</a></footer>
+  </div>
+
+<script>
+function escapeHtml(str) {
+  if (str === undefined || str === null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatarData(iso) {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("pt-BR");
+  } catch (e) {
+    return iso;
+  }
+}
+
+function statusClasse(s) {
+  return (s || "pendente").toLowerCase();
+}
+
+async function carregar() {
+  try {
+    const resp = await fetch("/submissoes");
+    const dados = await resp.json();
+    const submissoes = dados.submissoes || [];
+
+    const contagem = {};
+    submissoes.forEach(s => {
+      const st = s.status || "pendente";
+      contagem[st] = (contagem[st] || 0) + 1;
+    });
+
+    const statsEl = document.getElementById("stats");
+    const ordemStats = ["pendente", "em_execucao", "concluido", "falha"];
+    const rotulos = {
+      pendente: "Pendentes",
+      em_execucao: "Em execução",
+      concluido: "Concluídas",
+      falha: "Falhas"
+    };
+    statsEl.innerHTML = `
+      <div class="stat"><div class="n">${submissoes.length}</div><div class="l">Total</div></div>
+      ${ordemStats.map(k => `
+        <div class="stat"><div class="n">${contagem[k] || 0}</div><div class="l">${rotulos[k]}</div></div>
+      `).join("")}
+    `;
+
+    const corpo = document.getElementById("corpo-tabela");
+
+    if (submissoes.length === 0) {
+      corpo.innerHTML = `<tr><td colspan="6" class="empty">Nenhuma submissão ainda. Envie uma via POST /submissoes.</td></tr>`;
+    } else {
+      corpo.innerHTML = submissoes.map(s => {
+        const status = statusClasse(s.status);
+        const veredito = s.veredito ? `<div class="veredito badge ${statusClasse(s.veredito)}">${escapeHtml(s.veredito)}</div>` : "";
+        const saida = s.saida ? `<div class="saida">${escapeHtml(s.saida).slice(0, 200)}</div>` : "";
+        const tempo = s.tempo_execucao_s !== undefined ? `${s.tempo_execucao_s}s` : "-";
+
+        return `
+          <tr>
+            <td class="id-cell">${escapeHtml((s.id || "").slice(0, 8))}…</td>
+            <td>${escapeHtml(s.id_aluno)}<br><span class="id-cell">${escapeHtml(s.id_questao)}</span></td>
+            <td>
+              <span class="badge ${status}">${escapeHtml(s.status || "pendente")}</span>
+              ${veredito}
+            </td>
+            <td>${saida}</td>
+            <td class="tempo">${tempo}</td>
+            <td class="id-cell">${formatarData(s.criado_em)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("ultima-atualizacao").textContent =
+      "última atualização: " + new Date().toLocaleTimeString("pt-BR");
+
+  } catch (e) {
+    document.getElementById("ultima-atualizacao").textContent = "erro ao atualizar: " + e.message;
+  }
+}
+
+carregar();
+setInterval(carregar, 3000);
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"   # protocolo AMQP
+      - "15672:15672" # painel de gerenciamento (usuario/senha: guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask-api:
+    build: ./flask-api
+    ports:
+      - "5000:5000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_QUEUE: submissoes
+      RESULTS_DIR: /data/results
+    volumes:
+      - resultados:/data/results
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  corretor:
+    build: ./corretor
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_QUEUE: submissoes
+      RESULTS_DIR: /data/results
+      TIMEOUT_SEGUNDOS: "2"
+      MEM_LIMIT: "64m"
+      CPU_QUOTA: "50000"   # 50% de 1 nucleo (cpu_period padrao = 100000)
+    volumes:
+      - resultados:/data/results
+      # socket do host: permite que o corretor crie containers "irmaos"
+      # sem precisar de Docker-in-Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    # em producao, escale com: docker compose up --scale corretor=3
+    deploy:
+      replicas: 1
+
+volumes:
+  resultados:
