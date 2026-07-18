@@ -36,6 +36,12 @@ docker compose up --build --scale corretor=3
 
 ./teste_carga.sh http://localhost:5000 800 50
 docker compose exec flask-api sh -c "rm -f /data/results/*.json"
+
+docker compose kill -s SIGKILL corretor
+docker compose kill --index=2 -s SIGKILL corretor
+
+docker compose up -d corretor
+
 ```
 
 ## Testando o fluxo
