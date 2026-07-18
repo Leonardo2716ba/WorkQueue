@@ -81,7 +81,7 @@ fi
 # --------------------------------------------------------------------------
 
 payload_normal() {
-  printf '{"codigo": "import random\\nn = 1000\\nvetor = list(range(n, 0, -1))\\ntrocas = 0\\nfor i in range(len(vetor)):\\n    for j in range(len(vetor) - i - 1):\\n        if vetor[j] > vetor[j + 1]:\\n            vetor[j], vetor[j + 1] = vetor[j + 1], vetor[j]\\n            trocas += 1\\nprint(f%s)", "id_questao": "carga", "id_aluno": "carga_%s"}' \
+  printf '{"codigo": "import random\nn = 1000\nvetor = [random.randint(1, 1000) for _ in range(n)]\ntrocas = 0\nfor i in range(len(vetor)):\n    for j in range(len(vetor) - i - 1):\n        if vetor[j] > vetor[j + 1]:\n            vetor[j], vetor[j + 1] = vetor[j + 1], vetor[j]\n            trocas += 1\nprint(f%s)", "id_questao": "carga", "id_aluno": "carga_%s"}' \
     "'ordenado n={n} trocas={trocas} ok={vetor == sorted(vetor)}'" "$1"
 }
 
@@ -107,14 +107,7 @@ payload_memoria() {
 # distribuicao aproximada a cada 10 submissoes:
 #   1x loop infinito | 1x estoura memoria | 2x erro | 2x lento | 4x normal
 gerar_payload() {
-  local i=$1
-  local resto=$(( i % 10 ))
-  if   [ "$resto" -eq 0 ]; then payload_loop_infinito "$i"
-  elif [ "$resto" -eq 1 ]; then payload_memoria "$i"
-  elif [ "$resto" -le 3 ]; then payload_erro "$i"
-  elif [ "$resto" -le 5 ]; then payload_lento "$i"
-  else payload_normal "$i"
-  fi
+  payload_normal "$1"
 }
 
 enviar_submissao() {
